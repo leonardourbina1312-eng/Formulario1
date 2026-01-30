@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Formación Integrativa</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 650px; margin: 20px auto; padding: 20px; background-color: #f0f2f5; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; font-size: 24px; margin-bottom: 5px; }
+        h2 { color: #16a085; text-align: center; font-size: 16px; margin-top: 0; margin-bottom: 25px; font-weight: normal; }
+        
+        label { display: block; margin-top: 15px; font-weight: bold; color: #444; }
+        input { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        
+        .btn-group { margin-top: 25px; display: flex; gap: 10px; flex-direction: column; }
+        
+        button { padding: 14px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; transition: 0.3s; font-weight: bold; }
+        .btn-save { background-color: #25D366; color: white; }
+        .btn-export { background-color: #007bff; color: white; }
+        .btn-clear { background-color: #dc3545; color: white; font-size: 12px; padding: 8px; margin-top: 10px; width: auto; align-self: flex-end; }
+
+        .success-box { background-color: #e8f5e9; border: 2px solid #4caf50; padding: 15px; border-radius: 8px; margin-top: 20px; display: none; text-align: center; }
+        .code-display { font-size: 24px; font-weight: bold; color: #333; letter-spacing: 2px; margin: 10px 0; background: #fff; padding: 5px; border-radius: 4px; display: inline-block; }
+
+        table { width: 100%; margin-top: 30px; border-collapse: collapse; font-size: 14px; background: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; }
+        .count { text-align: right; color: #777; font-size: 12px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>Centro de Formación Integrativa</h1>
+        <h2>Registro y Fidelización 🌿</h2>
+        
+        <label for="nombre">Nombre del Cliente:</label>
+        <input type="text" id="nombre" placeholder="Ej. Ana García" required>
+        
+        <label for="whatsapp">Número de WhatsApp:</label>
+        <input type="tel" id="whatsapp" placeholder="Ej. 521..." required>
+        
+        <div class="btn-group">
+            <button onclick="guardarYEnviar()" class="btn-save">💾 Guardar y Enviar WhatsApp</button>
+            <button onclick="exportarCSV()" class="btn-export">📥 Exportar Lista a Excel</button>
+        </div>
+
+        <div id="confirmacion" class="success-box">
+            <h3>✅ ¡Registrado!</h3>
+            <div class="code-display" id="conf-codigo">----</div>
+            <p>Cliente guardado en memoria local.</p>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+            <div class="count" id="contador">0 registros</div>
+            <button onclick="borrarDatos()" class="btn-clear">🗑️ Borrar lista</button>
+        </div>
+
+        <table id="tablaContactos">
+            <thead>
+                <tr><th>Nombre</th><th>WhatsApp</th><th>Código</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        // Cargar datos de la memoria del navegador al iniciar
+        let baseDeDatos = JSON.parse(localStorage.getItem('cfi_clientes_db')) || [];
+        actualizarTabla();
+
+        function generarCodigo() {
+            return `CFI-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        }
+
+        function guardarYEnviar() {
+            const nombre = document.getElementById('nombre').value.trim();
+            const telefono = document.getElementById('whatsapp').value.trim();
+
+            if (!nombre || !telefono) { alert("⚠️ Faltan datos"); return; }
+
+            const codigo = generarCodigo();
+            baseDeDatos.push({ nombre, telefono, codigo });
+            
+            // GUARDAR EN MEMORIA LOCAL (Esto es lo que hace la magia)
+            localStorage.setItem('cfi_clientes_db', JSON.stringify(baseDeDatos));
+            
+            actualizarTabla();
+
+            // Mostrar Confirmación
+            document.getElementById('conf-codigo').innerText = codigo;
+            document.getElementById('confirmacion').style.display = 'block';
+
+            // WhatsApp
+            const mensaje = `Hola ${nombre}! 👋🌿\n\nMuchas gracias por consumir productos de Chiapas. ✨\n¡Felicidades! Acabas de conseguir tu primer *SELLO DE FIDELIZACIÓN* 🎖️.\n\n🆔 *Tu Código es:* ${codigo}\n\n🎁 *Dinámica:* Junta 5 sellos para ganar un premio o descuento en el *Centro de Formación Integrativa para el Bienestar*.\n\nAyúdanos con esta encuesta rápida: 👇\nhttps://stupendous-tarragon-aa2.notion.site/2f7715158cda80a2afc7d9d04f203f10?pvs=105`;
+            window.open(`https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`, '_blank');
+
+            document.getElementById('nombre').value = '';
+            document.getElementById('whatsapp').value = '';
+        }
+
+        function actualizarTabla() {
+            const tbody = document.querySelector('#tablaContactos tbody');
+            tbody.innerHTML = ''; 
+            baseDeDatos.slice().reverse().forEach(c => {
+                tbody.innerHTML += `<tr><td>${c.nombre}</td><td>${c.telefono}</td><td><strong>${c.codigo}</strong></td></tr>`;
+            });
+            document.getElementById('contador').innerText = `${baseDeDatos.length} registros guardados`;
+        }
+
+        function exportarCSV() {
+            if (baseDeDatos.length === 0) { alert("Lista vacía"); return; }
+            let csv = "Nombre,WhatsApp,Codigo\n" + baseDeDatos.map(row => `${row.nombre},${row.telefono},${row.codigo}`).join("\n");
+            const link = document.createElement("a");
+            link.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
+            link.download = "clientes_fidelidad.csv";
+            link.click();
+        }
+
+        function borrarDatos() {
+            if(confirm("¿Estás seguro de BORRAR toda la lista guardada en este dispositivo? (Asegúrate de haber exportado antes)")) {
+                localStorage.removeItem('cfi_clientes_db');
+                baseDeDatos = [];
+                actualizarTabla();
+                alert("Memoria limpia.");
+            }
+        }
+    </script>
+</body>
+</html>
